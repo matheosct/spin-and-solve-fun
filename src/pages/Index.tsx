@@ -1,91 +1,277 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Settings, Trophy } from "lucide-react";
 import Wheel, { WheelSegment } from "@/components/Wheel";
 import LetterBoard from "@/components/LetterBoard";
 import LetterPicker from "@/components/LetterPicker";
+import SolvePuzzle from "@/components/SolvePuzzle";
+import PhraseManager from "@/components/PhraseManager";
 
-const PHRASES = [
-  "WHEEL OF FORTUNE",
-  "GOOD MORNING",
-  "TROPICAL PARADISE",
-  "AROUND THE WORLD",
-  "LIVING THE DREAM",
-  "CHAMPIONSHIP GAME",
-  "BEAUTIFUL SUNSET",
-  "MOUNTAIN ADVENTURE",
+const DEFAULT_PHRASES = [
+  "RODA DA FORTUNA",
+  "BOM DIA",
+  "PARAISO TROPICAL",
+  "AO REDOR DO MUNDO",
+  "VIVENDO O SONHO",
+  "JOGO DE CAMPEONATO",
+  "POR DO SOL LINDO",
+  "AVENTURA NA MONTANHA",
 ];
 
-type GamePhase = "spin" | "guess" | "result";
+interface Player {
+  name: string;
+  score: number;
+}
+
+type GamePhase = "setup" | "spin" | "guess" | "solve" | "result";
 
 export default function Index() {
-  const [phrase, setPhrase] = useState(() => PHRASES[Math.floor(Math.random() * PHRASES.length)]);
+  // Setup state
+  const [players, setPlayers] = useState<Player[]>([
+    { name: "Jogador 1", score: 0 },
+    { name: "Jogador 2", score: 0 },
+  ]);
+  const [currentPlayer, setCurrentPlayer] = useState(0);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [playerNameInput, setPlayerNameInput] = useState("");
+
+  // Game state
+  const [phrases, setPhrases] = useState<string[]>(DEFAULT_PHRASES);
+  const [phrase, setPhrase] = useState("");
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [usedLetters, setUsedLetters] = useState<Set<string>>(new Set());
-  const [score, setScore] = useState(0);
   const [spinning, setSpinning] = useState(false);
-  const [phase, setPhase] = useState<GamePhase>("spin");
+  const [phase, setPhase] = useState<GamePhase>("setup");
   const [lastResult, setLastResult] = useState<WheelSegment | null>(null);
-  const [message, setMessage] = useState("Spin the wheel to start!");
+  const [message, setMessage] = useState("Configure os jogadores e comece!");
+  const [showPhraseManager, setShowPhraseManager] = useState(false);
+  const [winner, setWinner] = useState<Player | null>(null);
 
-  const phraseLetters = new Set(phrase.replace(/[^A-Z]/gi, "").toUpperCase().split(""));
-  const allRevealed = [...phraseLetters].every((l) => revealed.has(l));
+  const phraseLetters = new Set(phrase.replace(/[^A-ZÀ-ÿ]/gi, "").toUpperCase().split(""));
+  const allRevealed = phrase !== "" && [...phraseLetters].every((l) => revealed.has(l));
 
-  const handleResult = useCallback((segment: WheelSegment) => {
-    setLastResult(segment);
-    if (segment.value === 0) {
-      setScore(0);
-      setMessage("💥 BANKRUPT! You lost it all!");
-      setPhase("spin");
-    } else if (segment.value === -1) {
-      setMessage("⏭️ Skip! You lose this turn.");
-      setPhase("spin");
-    } else {
-      setMessage(`You landed on ${segment.label}! Pick a letter.`);
-      setPhase("guess");
-    }
-  }, []);
+  const nextTurn = useCallback(() => {
+    setCurrentPlayer((prev) => (prev + 1) % players.length);
+  }, [players.length]);
+
+  const startGame = () => {
+    if (players.length < 1) return;
+    const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+    setPhrase(randomPhrase);
+    setRevealed(new Set());
+    setUsedLetters(new Set());
+    setPhase("spin");
+    setWinner(null);
+    setCurrentPlayer(0);
+    setMessage(`Vez de ${players[0].name}! Gire a roleta!`);
+    setGameStarted(true);
+  };
+
+  const handleResult = useCallback(
+    (segment: WheelSegment) => {
+      setLastResult(segment);
+      const name = players[currentPlayer].name;
+      if (segment.value === 0) {
+        setPlayers((prev) =>
+          prev.map((p, i) => (i === currentPlayer ? { ...p, score: 0 } : p))
+        );
+        setMessage(`💥 FALIU! ${name} perdeu tudo!`);
+        nextTurn();
+        setTimeout(() => {
+          setMessage(`Vez de ${players[(currentPlayer + 1) % players.length].name}! Gire a roleta!`);
+          setPhase("spin");
+        }, 1500);
+      } else if (segment.value === -1) {
+        setMessage(`⏭️ ${name} passou a vez!`);
+        nextTurn();
+        setTimeout(() => {
+          setMessage(`Vez de ${players[(currentPlayer + 1) % players.length].name}! Gire a roleta!`);
+          setPhase("spin");
+        }, 1500);
+      } else {
+        setMessage(`${name} parou em ${segment.label}! Escolha uma letra.`);
+        setPhase("guess");
+      }
+    },
+    [currentPlayer, players, nextTurn]
+  );
 
   const handleLetterPick = useCallback(
     (letter: string) => {
       setUsedLetters((prev) => new Set(prev).add(letter));
       const upper = letter.toUpperCase();
       const count = phrase.toUpperCase().split("").filter((c) => c === upper).length;
+      const name = players[currentPlayer].name;
 
       if (count > 0 && lastResult) {
         const earned = count * lastResult.value;
-        setScore((prev) => prev + earned);
+        setPlayers((prev) =>
+          prev.map((p, i) => (i === currentPlayer ? { ...p, score: p.score + earned } : p))
+        );
         setRevealed((prev) => new Set(prev).add(upper));
-        setMessage(`🎉 "${letter}" appears ${count} time(s)! +$${earned}`);
+        setMessage(`🎉 "${letter}" aparece ${count} vez(es)! ${name} +R$${earned}`);
+        // Player keeps their turn on correct guess
+        setPhase("spin");
       } else {
-        setMessage(`❌ No "${letter}" in the puzzle.`);
+        setMessage(`❌ Não tem "${letter}". Vez do próximo!`);
+        nextTurn();
+        setTimeout(() => {
+          setMessage(`Vez de ${players[(currentPlayer + 1) % players.length].name}! Gire a roleta!`);
+          setPhase("spin");
+        }, 1200);
       }
-      setPhase("spin");
     },
-    [phrase, lastResult]
+    [phrase, lastResult, currentPlayer, players, nextTurn]
+  );
+
+  const handleSolve = useCallback(
+    (guess: string) => {
+      if (guess === phrase.toUpperCase()) {
+        const w = players[currentPlayer];
+        setWinner(w);
+        setRevealed(new Set(phrase.toUpperCase().split("")));
+        setMessage(`🎊 ${w.name} resolveu! Parabéns!`);
+        setPhase("result");
+      } else {
+        setMessage(`❌ Resposta errada! ${players[currentPlayer].name} perde a vez.`);
+        nextTurn();
+        setTimeout(() => {
+          setMessage(`Vez de ${players[(currentPlayer + 1) % players.length].name}! Gire a roleta!`);
+          setPhase("spin");
+        }, 1500);
+      }
+    },
+    [phrase, currentPlayer, players, nextTurn]
   );
 
   const resetGame = () => {
-    const newPhrase = PHRASES[Math.floor(Math.random() * PHRASES.length)];
-    setPhrase(newPhrase);
+    const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+    setPhrase(randomPhrase);
     setRevealed(new Set());
     setUsedLetters(new Set());
-    setScore(0);
+    setPlayers((prev) => prev.map((p) => ({ ...p, score: 0 })));
     setPhase("spin");
     setLastResult(null);
-    setMessage("Spin the wheel to start!");
+    setWinner(null);
+    setCurrentPlayer(0);
+    setMessage(`Vez de ${players[0].name}! Gire a roleta!`);
   };
 
-  return (
-    <div className="min-h-screen bg-background flex flex-col items-center px-4 py-6 gap-6 overflow-auto">
-      {/* Title */}
-      <h1 className="font-display text-3xl sm:text-4xl text-primary glow-gold tracking-wide text-center">
-        Wheel of Fortune
-      </h1>
+  const addPlayer = () => {
+    const name = playerNameInput.trim() || `Jogador ${players.length + 1}`;
+    setPlayers((prev) => [...prev, { name, score: 0 }]);
+    setPlayerNameInput("");
+  };
 
-      {/* Score */}
-      <div className="bg-card border border-border rounded-lg px-8 py-3 text-center">
-        <p className="text-muted-foreground text-sm font-body">SCORE</p>
-        <p className="font-display text-3xl text-primary">${score.toLocaleString()}</p>
+  const removePlayer = (index: number) => {
+    if (players.length <= 2) return;
+    setPlayers((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // SETUP SCREEN
+  if (!gameStarted) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8 gap-6">
+        <h1 className="font-display text-4xl sm:text-5xl text-primary glow-gold tracking-wide text-center">
+          Roda da Fortuna
+        </h1>
+        <p className="text-muted-foreground font-body text-lg">Configure os jogadores</p>
+
+        <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm space-y-4">
+          <div className="space-y-2">
+            {players.map((p, i) => (
+              <div key={i} className="flex items-center justify-between bg-muted rounded-lg px-3 py-2">
+                <span className="font-body text-foreground">{p.name}</span>
+                {players.length > 2 && (
+                  <button
+                    onClick={() => removePlayer(i)}
+                    className="text-muted-foreground hover:text-destructive text-sm"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {players.length < 4 && (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={playerNameInput}
+                onChange={(e) => setPlayerNameInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addPlayer()}
+                placeholder="Nome do jogador..."
+                className="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <button
+                onClick={addPlayer}
+                className="bg-secondary text-secondary-foreground rounded-lg px-4 py-2 font-body text-sm hover:brightness-110 transition-all"
+              >
+                Adicionar
+              </button>
+            </div>
+          )}
+
+          <button
+            onClick={() => setShowPhraseManager(true)}
+            className="w-full flex items-center justify-center gap-2 bg-muted text-muted-foreground rounded-lg px-4 py-2 font-body text-sm hover:text-foreground transition-all"
+          >
+            <Settings size={16} /> Gerenciar Palavras ({phrases.length})
+          </button>
+
+          <button
+            onClick={startGame}
+            className="w-full font-display text-xl py-4 rounded-lg bg-primary text-primary-foreground hover:brightness-110 transition-all shadow-lg"
+          >
+            COMEÇAR!
+          </button>
+        </div>
+
+        <AnimatePresence>
+          {showPhraseManager && (
+            <PhraseManager
+              phrases={phrases}
+              onUpdate={setPhrases}
+              onClose={() => setShowPhraseManager(false)}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  // GAME SCREEN
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center px-4 py-4 gap-4 overflow-auto">
+      {/* Title + Settings */}
+      <div className="flex items-center gap-3">
+        <h1 className="font-display text-2xl sm:text-3xl text-primary glow-gold tracking-wide">
+          Roda da Fortuna
+        </h1>
+        <button
+          onClick={() => setShowPhraseManager(true)}
+          className="text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Settings size={18} />
+        </button>
+      </div>
+
+      {/* Player Scores */}
+      <div className="flex flex-wrap justify-center gap-3">
+        {players.map((p, i) => (
+          <div
+            key={i}
+            className={`bg-card border-2 rounded-lg px-4 py-2 text-center transition-all ${
+              i === currentPlayer && !winner
+                ? "border-primary shadow-lg shadow-primary/20 scale-105"
+                : "border-border"
+            }`}
+          >
+            <p className="text-muted-foreground text-xs font-body">{p.name}</p>
+            <p className="font-display text-lg text-primary">R${p.score.toLocaleString()}</p>
+          </div>
+        ))}
       </div>
 
       {/* Message */}
@@ -95,7 +281,7 @@ export default function Index() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 10 }}
-          className="text-foreground font-body text-lg text-center max-w-md"
+          className="text-foreground font-body text-base text-center max-w-md"
         >
           {message}
         </motion.p>
@@ -104,18 +290,30 @@ export default function Index() {
       {/* Letter Board */}
       <LetterBoard phrase={phrase} revealed={revealed} />
 
-      {allRevealed ? (
+      {allRevealed || winner ? (
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="flex flex-col items-center gap-4"
+          className="flex flex-col items-center gap-3"
         >
-          <p className="font-display text-2xl text-primary glow-gold">🎊 YOU SOLVED IT! 🎊</p>
+          <div className="flex items-center gap-2">
+            <Trophy className="text-primary" size={28} />
+            <p className="font-display text-xl text-primary glow-gold">
+              {winner ? `${winner.name} VENCEU!` : "RESOLVIDO!"}
+            </p>
+            <Trophy className="text-primary" size={28} />
+          </div>
           <button
             onClick={resetGame}
-            className="font-display text-lg px-8 py-3 rounded-lg bg-accent text-accent-foreground hover:brightness-110 transition-all"
+            className="font-display text-base px-8 py-3 rounded-lg bg-accent text-accent-foreground hover:brightness-110 transition-all"
           >
-            NEW GAME
+            NOVO JOGO
+          </button>
+          <button
+            onClick={() => { setGameStarted(false); setPhase("setup"); }}
+            className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Voltar ao menu
           </button>
         </motion.div>
       ) : (
@@ -123,15 +321,46 @@ export default function Index() {
           {/* Wheel */}
           <Wheel onResult={handleResult} spinning={spinning} setSpinning={setSpinning} />
 
+          {/* Solve button */}
+          {phase === "spin" && !spinning && (
+            <button
+              onClick={() => setPhase("solve")}
+              className="font-display text-sm px-6 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground transition-all"
+            >
+              RESOLVER PUZZLE
+            </button>
+          )}
+
           {/* Letter Picker */}
           {phase === "guess" && !spinning && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <p className="text-center text-muted-foreground mb-2 font-body">Pick a letter:</p>
+              <p className="text-center text-muted-foreground mb-2 font-body text-sm">Escolha uma letra:</p>
               <LetterPicker usedLetters={usedLetters} onPick={handleLetterPick} disabled={spinning} />
             </motion.div>
           )}
+
+          {/* Solve Puzzle */}
+          {phase === "solve" && (
+            <SolvePuzzle
+              onSolve={handleSolve}
+              onCancel={() => {
+                setPhase("spin");
+                setMessage(`Vez de ${players[currentPlayer].name}! Gire a roleta!`);
+              }}
+            />
+          )}
         </>
       )}
+
+      <AnimatePresence>
+        {showPhraseManager && (
+          <PhraseManager
+            phrases={phrases}
+            onUpdate={setPhrases}
+            onClose={() => setShowPhraseManager(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

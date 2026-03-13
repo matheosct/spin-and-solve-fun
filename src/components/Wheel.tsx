@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 
 export interface WheelSegment {
@@ -8,22 +8,22 @@ export interface WheelSegment {
 }
 
 const SEGMENTS: WheelSegment[] = [
-  { label: "$100", value: 100, color: "hsl(210, 80%, 45%)" },
-  { label: "$250", value: 250, color: "hsl(140, 60%, 40%)" },
-  { label: "SKIP", value: -1, color: "hsl(220, 20%, 30%)" },
-  { label: "$500", value: 500, color: "hsl(280, 60%, 50%)" },
-  { label: "$150", value: 150, color: "hsl(25, 95%, 55%)" },
-  { label: "$300", value: 300, color: "hsl(180, 60%, 40%)" },
-  { label: "SKIP", value: -1, color: "hsl(220, 20%, 30%)" },
-  { label: "$750", value: 750, color: "hsl(330, 70%, 55%)" },
-  { label: "$200", value: 200, color: "hsl(210, 80%, 45%)" },
-  { label: "BANKRUPT", value: 0, color: "hsl(0, 80%, 45%)" },
-  { label: "$400", value: 400, color: "hsl(140, 60%, 40%)" },
-  { label: "SKIP", value: -1, color: "hsl(220, 20%, 30%)" },
-  { label: "$1000", value: 1000, color: "hsl(45, 100%, 50%)" },
-  { label: "$350", value: 350, color: "hsl(280, 60%, 50%)" },
-  { label: "$200", value: 200, color: "hsl(25, 95%, 55%)" },
-  { label: "$600", value: 600, color: "hsl(180, 60%, 40%)" },
+  { label: "R$100", value: 100, color: "hsl(210, 80%, 45%)" },
+  { label: "R$250", value: 250, color: "hsl(140, 60%, 40%)" },
+  { label: "PASSA", value: -1, color: "hsl(220, 20%, 30%)" },
+  { label: "R$500", value: 500, color: "hsl(280, 60%, 50%)" },
+  { label: "R$150", value: 150, color: "hsl(25, 95%, 55%)" },
+  { label: "R$300", value: 300, color: "hsl(180, 60%, 40%)" },
+  { label: "PASSA", value: -1, color: "hsl(220, 20%, 30%)" },
+  { label: "R$750", value: 750, color: "hsl(330, 70%, 55%)" },
+  { label: "R$200", value: 200, color: "hsl(210, 80%, 45%)" },
+  { label: "FALIU", value: 0, color: "hsl(0, 80%, 45%)" },
+  { label: "R$400", value: 400, color: "hsl(140, 60%, 40%)" },
+  { label: "PASSA", value: -1, color: "hsl(220, 20%, 30%)" },
+  { label: "R$1000", value: 1000, color: "hsl(45, 100%, 50%)" },
+  { label: "R$350", value: 350, color: "hsl(280, 60%, 50%)" },
+  { label: "R$200", value: 200, color: "hsl(25, 95%, 55%)" },
+  { label: "R$600", value: 600, color: "hsl(180, 60%, 40%)" },
 ];
 
 interface WheelProps {
@@ -56,9 +56,8 @@ export default function Wheel({ onResult, spinning, setSpinning }: WheelProps) {
   const center = 160;
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex flex-col items-center gap-4">
       <div className="relative shadow-wheel rounded-full">
-        {/* Pointer */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10">
           <div
             className="w-0 h-0"
@@ -107,7 +106,7 @@ export default function Wheel({ onResult, spinning, setSpinning }: WheelProps) {
                   textAnchor="middle"
                   dominantBaseline="central"
                   fill="white"
-                  fontSize={seg.label.length > 4 ? "8" : "11"}
+                  fontSize={seg.label.length > 5 ? "7" : seg.label.length > 4 ? "8" : "11"}
                   fontWeight="bold"
                   fontFamily="Bungee, cursive"
                   transform={`rotate(${(startAngle + endAngle) / 2 + 90}, ${tx}, ${ty})`}
@@ -126,7 +125,7 @@ export default function Wheel({ onResult, spinning, setSpinning }: WheelProps) {
         disabled={spinning}
         className="font-display text-xl px-10 py-4 rounded-lg bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-50 transition-all shadow-lg hover:shadow-xl active:scale-95"
       >
-        {spinning ? "SPINNING..." : "SPIN!"}
+        {spinning ? "GIRANDO..." : "GIRAR!"}
       </button>
     </div>
   );
