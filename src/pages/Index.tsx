@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, Trophy } from "lucide-react";
+import { Settings, Trophy, ArrowLeft } from "lucide-react";
 import Wheel, { WheelSegment } from "@/components/Wheel";
 import LetterBoard from "@/components/LetterBoard";
 import LetterPicker from "@/components/LetterPicker";
@@ -10,13 +10,26 @@ import PhraseManager from "@/components/PhraseManager";
 const DEFAULT_PHRASES = [
   "RODA DA FORTUNA",
   "BOM DIA",
-  "PARAISO TROPICAL",
+  "PARAÍSO TROPICAL",
   "AO REDOR DO MUNDO",
   "VIVENDO O SONHO",
   "JOGO DE CAMPEONATO",
-  "POR DO SOL LINDO",
+  "PÔR DO SOL LINDO",
   "AVENTURA NA MONTANHA",
+  "CORAÇÃO VALENTE",
+  "MÚSICA BRASILEIRA",
 ];
+
+// Normalize: strip accents for matching purposes
+function normalize(char: string): string {
+  return char.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+}
+
+// Get all unique base + accented characters in a phrase
+function getPhraseLetters(phrase: string): Set<string> {
+  const chars = phrase.toUpperCase().split("").filter((c) => /[A-ZÀ-ÿ]/i.test(c));
+  return new Set(chars);
+}
 
 interface Player {
   name: string;
@@ -26,7 +39,6 @@ interface Player {
 type GamePhase = "setup" | "spin" | "guess" | "solve" | "result";
 
 export default function Index() {
-  // Setup state
   const [players, setPlayers] = useState<Player[]>([
     { name: "Jogador 1", score: 0 },
     { name: "Jogador 2", score: 0 },
@@ -35,7 +47,6 @@ export default function Index() {
   const [gameStarted, setGameStarted] = useState(false);
   const [playerNameInput, setPlayerNameInput] = useState("");
 
-  // Game state
   const [phrases, setPhrases] = useState<string[]>(DEFAULT_PHRASES);
   const [phrase, setPhrase] = useState("");
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
@@ -47,12 +58,21 @@ export default function Index() {
   const [showPhraseManager, setShowPhraseManager] = useState(false);
   const [winner, setWinner] = useState<Player | null>(null);
 
-  const phraseLetters = new Set(phrase.replace(/[^A-ZÀ-ÿ]/gi, "").toUpperCase().split(""));
+  const phraseLetters = getPhraseLetters(phrase);
+  // Check if all letters are revealed (match by normalized form)
   const allRevealed = phrase !== "" && [...phraseLetters].every((l) => revealed.has(l));
 
   const nextTurn = useCallback(() => {
     setCurrentPlayer((prev) => (prev + 1) % players.length);
   }, [players.length]);
+
+  const goBackToMenu = () => {
+    setGameStarted(false);
+    setPhase("setup");
+    setSpinning(false);
+    setWinner(null);
+    setMessage("Configure os jogadores e comece!");
+  };
 
   const startGame = () => {
     if (players.length < 1) return;
@@ -100,7 +120,14 @@ export default function Index() {
     (letter: string) => {
       setUsedLetters((prev) => new Set(prev).add(letter));
       const upper = letter.toUpperCase();
-      const count = phrase.toUpperCase().split("").filter((c) => c === upper).length;
+      const normalizedPick = normalize(upper);
+
+      // Find all chars in phrase that match (either exact or by normalized form)
+      const phraseChars = phrase.toUpperCase().split("");
+      const matchingChars = phraseChars.filter(
+        (c) => c === upper || normalize(c) === normalizedPick
+      );
+      const count = matchingChars.length;
       const name = players[currentPlayer].name;
 
       if (count > 0 && lastResult) {
@@ -108,9 +135,14 @@ export default function Index() {
         setPlayers((prev) =>
           prev.map((p, i) => (i === currentPlayer ? { ...p, score: p.score + earned } : p))
         );
-        setRevealed((prev) => new Set(prev).add(upper));
+        // Reveal all matching characters (including accented variants)
+        setRevealed((prev) => {
+          const next = new Set(prev);
+          next.add(upper);
+          matchingChars.forEach((c) => next.add(c));
+          return next;
+        });
         setMessage(`🎉 "${letter}" aparece ${count} vez(es)! ${name} +R$${earned}`);
-        // Player keeps their turn on correct guess
         setPhase("spin");
       } else {
         setMessage(`❌ Não tem "${letter}". Vez do próximo!`);
@@ -126,10 +158,12 @@ export default function Index() {
 
   const handleSolve = useCallback(
     (guess: string) => {
-      if (guess === phrase.toUpperCase()) {
+      const normalizedGuess = guess.toUpperCase();
+      const normalizedPhrase = phrase.toUpperCase();
+      if (normalizedGuess === normalizedPhrase) {
         const w = players[currentPlayer];
         setWinner(w);
-        setRevealed(new Set(phrase.toUpperCase().split("")));
+        setRevealed(new Set(normalizedPhrase.split("")));
         setMessage(`🎊 ${w.name} resolveu! Parabéns!`);
         setPhase("result");
       } else {
@@ -244,9 +278,15 @@ export default function Index() {
   // GAME SCREEN
   return (
     <div className="min-h-screen bg-background flex flex-col items-center px-4 py-4 gap-4 overflow-auto">
-      {/* Title + Settings */}
-      <div className="flex items-center gap-3">
-        <h1 className="font-display text-2xl sm:text-3xl text-primary glow-gold tracking-wide">
+      {/* Header */}
+      <div className="flex items-center gap-3 w-full max-w-2xl">
+        <button
+          onClick={goBackToMenu}
+          className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 font-body text-sm"
+        >
+          <ArrowLeft size={16} /> Menu
+        </button>
+        <h1 className="font-display text-2xl sm:text-3xl text-primary glow-gold tracking-wide flex-1 text-center">
           Roda da Fortuna
         </h1>
         <button
@@ -310,7 +350,7 @@ export default function Index() {
             NOVO JOGO
           </button>
           <button
-            onClick={() => { setGameStarted(false); setPhase("setup"); }}
+            onClick={goBackToMenu}
             className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Voltar ao menu
@@ -318,10 +358,8 @@ export default function Index() {
         </motion.div>
       ) : (
         <>
-          {/* Wheel */}
           <Wheel onResult={handleResult} spinning={spinning} setSpinning={setSpinning} />
 
-          {/* Solve button */}
           {phase === "spin" && !spinning && (
             <button
               onClick={() => setPhase("solve")}
@@ -331,7 +369,6 @@ export default function Index() {
             </button>
           )}
 
-          {/* Letter Picker */}
           {phase === "guess" && !spinning && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <p className="text-center text-muted-foreground mb-2 font-body text-sm">Escolha uma letra:</p>
@@ -339,7 +376,6 @@ export default function Index() {
             </motion.div>
           )}
 
-          {/* Solve Puzzle */}
           {phase === "solve" && (
             <SolvePuzzle
               onSolve={handleSolve}
