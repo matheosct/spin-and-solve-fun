@@ -148,9 +148,9 @@ export default function Wheel({ onResult, spinning, setSpinning }: WheelProps) {
       <button
         onClick={spin}
         disabled={spinning}
-        className="font-display text-base px-8 py-3 rounded-lg bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-50 transition-all shadow-lg hover:shadow-xl active:scale-95"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 font-display text-sm px-4 py-2 rounded-full bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-50 transition-all shadow-lg hover:shadow-xl active:scale-95 whitespace-nowrap"
       >
-        {spinning ? "GIRANDO..." : "GIRAR!"}
+        {spinning ? "..." : "GIRAR!"}
       </button>
     </div>
   );
