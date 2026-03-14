@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Settings } from "lucide-react";
+import { X, Plus, Settings, Upload } from "lucide-react";
 
 interface PhraseManagerProps {
   phrases: string[];
@@ -10,6 +10,7 @@ interface PhraseManagerProps {
 
 export default function PhraseManager({ phrases, onUpdate, onClose }: PhraseManagerProps) {
   const [newPhrase, setNewPhrase] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const addPhrase = () => {
     const trimmed = newPhrase.trim().toUpperCase();
@@ -22,6 +23,29 @@ export default function PhraseManager({ phrases, onUpdate, onClose }: PhraseMana
   const removePhrase = (index: number) => {
     if (phrases.length <= 1) return;
     onUpdate(phrases.filter((_, i) => i !== index));
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const lines = text
+        .split(/\r?\n/)
+        .map((l) => l.trim().toUpperCase())
+        .filter((l) => l.length > 0);
+
+      if (lines.length > 0) {
+        const unique = [...new Set([...phrases, ...lines])];
+        onUpdate(unique);
+      }
+    };
+    reader.readAsText(file);
+
+    // Reset input so same file can be re-uploaded
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
@@ -62,6 +86,21 @@ export default function PhraseManager({ phrases, onUpdate, onClose }: PhraseMana
             <Plus size={18} />
           </button>
         </div>
+
+        {/* File upload */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".txt"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full flex items-center justify-center gap-2 bg-muted text-muted-foreground rounded-lg px-4 py-2 font-body text-sm hover:text-foreground transition-all border border-dashed border-border"
+        >
+          <Upload size={16} /> Importar lista de palavras (.txt)
+        </button>
 
         <div className="flex-1 overflow-y-auto space-y-2 pr-1">
           {phrases.map((phrase, i) => (
