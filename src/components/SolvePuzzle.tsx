@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Lightbulb, X, Check } from "lucide-react";
 
 interface SolvePuzzleProps {
   onSolve: (guess: string) => void;
@@ -10,18 +11,22 @@ export default function SolvePuzzle({ onSolve, onCancel }: SolvePuzzleProps) {
   const [guess, setGuess] = useState("");
 
   const handleSubmit = () => {
-    if (guess.trim()) {
-      onSolve(guess.trim().toUpperCase());
-    }
+    if (guess.trim()) onSolve(guess.trim().toUpperCase());
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center gap-3 w-full max-w-md mx-auto"
+      className="bg-card border border-border rounded-2xl p-5 shadow-soft flex flex-col items-center gap-4 w-full max-w-md mx-auto"
     >
-      <p className="font-body text-foreground text-sm">Digite sua resposta:</p>
+      <div className="flex items-center gap-2 text-foreground">
+        <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center">
+          <Lightbulb className="text-accent" size={18} />
+        </div>
+        <span className="font-medium">Digite sua resposta</span>
+      </div>
+
       <input
         type="text"
         value={guess}
@@ -29,20 +34,21 @@ export default function SolvePuzzle({ onSolve, onCancel }: SolvePuzzleProps) {
         onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
         autoFocus
         placeholder="Sua resposta..."
-        className="w-full bg-muted border border-border rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground font-display text-lg text-center focus:outline-none focus:ring-2 focus:ring-ring"
+        className="w-full bg-secondary border border-transparent rounded-2xl px-4 py-3 text-foreground placeholder:text-muted-foreground font-display text-lg text-center focus:outline-none focus:border-ring focus:bg-card transition-colors"
       />
-      <div className="flex gap-3">
+
+      <div className="flex gap-2 w-full">
         <button
           onClick={handleSubmit}
-          className="font-display text-sm px-6 py-2 rounded-lg bg-accent text-accent-foreground hover:brightness-110 transition-all"
+          className="flex-1 font-medium text-sm px-5 py-3 rounded-2xl bg-primary text-primary-foreground hover:brightness-110 transition-all shadow-soft hover:shadow-hover flex items-center justify-center gap-2"
         >
-          RESOLVER
+          <Check size={16} /> Resolver
         </button>
         <button
           onClick={onCancel}
-          className="font-display text-sm px-6 py-2 rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-all"
+          className="font-medium text-sm px-5 py-3 rounded-2xl bg-secondary text-muted-foreground hover:text-foreground transition-all flex items-center justify-center gap-2"
         >
-          CANCELAR
+          <X size={16} /> Cancelar
         </button>
       </div>
     </motion.div>

@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, Trophy, ArrowLeft } from "lucide-react";
+import { Settings, Trophy, ArrowLeft, Users, Sparkles, Plus, X, Play, Lightbulb } from "lucide-react";
 import Wheel, { WheelSegment } from "@/components/Wheel";
 import LetterBoard from "@/components/LetterBoard";
 import LetterPicker from "@/components/LetterPicker";
@@ -20,12 +20,10 @@ const DEFAULT_PHRASES = [
   "MÚSICA BRASILEIRA",
 ];
 
-// Normalize: strip accents for matching purposes
 function normalize(char: string): string {
   return char.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 }
 
-// Get all unique base + accented characters in a phrase
 function getPhraseLetters(phrase: string): Set<string> {
   const chars = phrase.toUpperCase().split("").filter((c) => /[A-ZÀ-ÿ]/i.test(c));
   return new Set(chars);
@@ -59,7 +57,6 @@ export default function Index() {
   const [winner, setWinner] = useState<Player | null>(null);
 
   const phraseLetters = getPhraseLetters(phrase);
-  // Check if all letters are revealed (match by normalized form)
   const allRevealed = phrase !== "" && [...phraseLetters].every((l) => revealed.has(l));
 
   const nextTurn = useCallback(() => {
@@ -122,7 +119,6 @@ export default function Index() {
       const upper = letter.toUpperCase();
       const normalizedPick = normalize(upper);
 
-      // Find all chars in phrase that match (either exact or by normalized form)
       const phraseChars = phrase.toUpperCase().split("");
       const matchingChars = phraseChars.filter(
         (c) => c === upper || normalize(c) === normalizedPick
@@ -135,7 +131,6 @@ export default function Index() {
         setPlayers((prev) =>
           prev.map((p, i) => (i === currentPlayer ? { ...p, score: p.score + earned } : p))
         );
-        // Reveal all matching characters (including accented variants)
         setRevealed((prev) => {
           const next = new Set(prev);
           next.add(upper);
@@ -205,23 +200,36 @@ export default function Index() {
   // SETUP SCREEN
   if (!gameStarted) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8 gap-6">
-        <h1 className="font-display text-4xl sm:text-5xl text-primary glow-gold tracking-wide text-center">
-          Roda da Fortuna
-        </h1>
-        <p className="text-muted-foreground font-body text-lg">Configure os jogadores</p>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-10 gap-8">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <Sparkles className="text-primary" size={28} />
+          </div>
+          <h1 className="font-display text-4xl sm:text-5xl text-foreground tracking-tight">
+            Roda da Fortuna
+          </h1>
+          <p className="text-muted-foreground text-base">Configure os jogadores e comece a jogar</p>
+        </div>
 
-        <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm space-y-4">
+        <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md space-y-5 shadow-soft">
+          <div className="flex items-center gap-2 text-foreground">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Users className="text-primary" size={18} />
+            </div>
+            <span className="font-medium">Jogadores</span>
+            <span className="ml-auto text-xs text-muted-foreground">{players.length}/4</span>
+          </div>
+
           <div className="space-y-2">
             {players.map((p, i) => (
-              <div key={i} className="flex items-center justify-between bg-muted rounded-lg px-3 py-2">
-                <span className="font-body text-foreground">{p.name}</span>
+              <div key={i} className="flex items-center justify-between bg-secondary rounded-2xl px-4 py-3">
+                <span className="text-foreground">{p.name}</span>
                 {players.length > 2 && (
                   <button
                     onClick={() => removePlayer(i)}
-                    className="text-muted-foreground hover:text-destructive text-sm"
+                    className="text-muted-foreground hover:text-destructive transition-colors"
                   >
-                    ✕
+                    <X size={16} />
                   </button>
                 )}
               </div>
@@ -236,29 +244,34 @@ export default function Index() {
                 onChange={(e) => setPlayerNameInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addPlayer()}
                 placeholder="Nome do jogador..."
-                className="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="flex-1 bg-secondary border border-transparent rounded-2xl px-4 py-3 text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-ring focus:bg-card transition-colors"
               />
               <button
                 onClick={addPlayer}
-                className="bg-secondary text-secondary-foreground rounded-lg px-4 py-2 font-body text-sm hover:brightness-110 transition-all"
+                className="bg-primary/10 text-primary rounded-2xl px-4 hover:bg-primary/15 transition-all flex items-center justify-center"
+                aria-label="Adicionar"
               >
-                Adicionar
+                <Plus size={18} />
               </button>
             </div>
           )}
 
           <button
             onClick={() => setShowPhraseManager(true)}
-            className="w-full flex items-center justify-center gap-2 bg-muted text-muted-foreground rounded-lg px-4 py-2 font-body text-sm hover:text-foreground transition-all"
+            className="w-full flex items-center gap-3 bg-secondary text-foreground rounded-2xl px-4 py-3 text-sm hover:bg-muted transition-all"
           >
-            <Settings size={16} /> Gerenciar Palavras ({phrases.length})
+            <div className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center">
+              <Settings className="text-accent" size={16} />
+            </div>
+            <span className="flex-1 text-left">Gerenciar Palavras</span>
+            <span className="text-muted-foreground text-xs">{phrases.length}</span>
           </button>
 
           <button
             onClick={startGame}
-            className="w-full font-display text-xl py-4 rounded-lg bg-primary text-primary-foreground hover:brightness-110 transition-all shadow-lg"
+            className="w-full font-display text-lg py-4 rounded-2xl bg-primary text-primary-foreground hover:brightness-110 transition-all shadow-soft hover:shadow-hover flex items-center justify-center gap-2"
           >
-            COMEÇAR!
+            <Play size={20} /> Começar
           </button>
         </div>
 
@@ -277,84 +290,96 @@ export default function Index() {
 
   // GAME SCREEN
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center px-4 py-4 gap-4 overflow-auto">
+    <div className="min-h-screen bg-background flex flex-col items-center px-4 py-5 gap-5 overflow-auto">
       {/* Header */}
-      <div className="flex items-center gap-3 w-full max-w-2xl">
+      <div className="flex items-center gap-3 w-full max-w-3xl">
         <button
           onClick={goBackToMenu}
-          className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 font-body text-sm"
+          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm bg-card border border-border rounded-2xl px-3 py-2 shadow-soft"
         >
           <ArrowLeft size={16} /> Menu
         </button>
-        <h1 className="font-display text-2xl sm:text-3xl text-primary glow-gold tracking-wide flex-1 text-center">
+        <h1 className="font-display text-2xl sm:text-3xl text-foreground tracking-tight flex-1 text-center">
           Roda da Fortuna
         </h1>
         <button
           onClick={() => setShowPhraseManager(true)}
-          className="text-muted-foreground hover:text-foreground transition-colors"
+          className="w-10 h-10 rounded-2xl bg-card border border-border text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shadow-soft"
+          aria-label="Configurações"
         >
           <Settings size={18} />
         </button>
       </div>
 
       {/* Player Scores */}
-      <div className="flex flex-wrap justify-center gap-3">
-        {players.map((p, i) => (
-          <div
-            key={i}
-            className={`bg-card border-2 rounded-lg px-4 py-2 text-center transition-all ${
-              i === currentPlayer && !winner
-                ? "border-primary shadow-lg shadow-primary/20 scale-105"
-                : "border-border"
-            }`}
-          >
-            <p className="text-muted-foreground text-xs font-body">{p.name}</p>
-            <p className="font-display text-lg text-primary">R${p.score.toLocaleString()}</p>
-          </div>
-        ))}
+      <div className="flex flex-wrap justify-center gap-3 w-full max-w-3xl">
+        {players.map((p, i) => {
+          const active = i === currentPlayer && !winner;
+          return (
+            <div
+              key={i}
+              className={`flex-1 min-w-[140px] rounded-2xl px-4 py-3 transition-all border ${
+                active
+                  ? "bg-primary text-primary-foreground border-primary shadow-hover scale-[1.02]"
+                  : "bg-card text-foreground border-border shadow-soft"
+              }`}
+            >
+              <p className={`text-xs ${active ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                {p.name}
+              </p>
+              <p className="font-display text-xl tracking-tight">R${p.score.toLocaleString()}</p>
+            </div>
+          );
+        })}
       </div>
 
       {/* Message */}
       <AnimatePresence mode="wait">
-        <motion.p
+        <motion.div
           key={message}
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 10 }}
-          className="text-foreground font-body text-base text-center max-w-md"
+          exit={{ opacity: 0, y: 6 }}
+          className="bg-card border border-border rounded-2xl px-5 py-3 shadow-soft max-w-xl flex items-center gap-3"
         >
-          {message}
-        </motion.p>
+          <div className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+            <Lightbulb className="text-accent" size={16} />
+          </div>
+          <p className="text-foreground text-sm">{message}</p>
+        </motion.div>
       </AnimatePresence>
 
       {/* Letter Board */}
-      <LetterBoard phrase={phrase} revealed={revealed} />
+      <div className="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-soft w-full max-w-3xl">
+        <LetterBoard phrase={phrase} revealed={revealed} />
+      </div>
 
       {allRevealed || winner ? (
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
+          initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="flex flex-col items-center gap-3"
+          className="flex flex-col items-center gap-4 bg-card border border-border rounded-2xl p-6 shadow-soft"
         >
-          <div className="flex items-center gap-2">
-            <Trophy className="text-primary" size={28} />
-            <p className="font-display text-xl text-primary glow-gold">
-              {winner ? `${winner.name} VENCEU!` : "RESOLVIDO!"}
-            </p>
-            <Trophy className="text-primary" size={28} />
+          <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center">
+            <Trophy className="text-accent" size={28} />
           </div>
-          <button
-            onClick={resetGame}
-            className="font-display text-base px-8 py-3 rounded-lg bg-accent text-accent-foreground hover:brightness-110 transition-all"
-          >
-            NOVO JOGO
-          </button>
-          <button
-            onClick={goBackToMenu}
-            className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Voltar ao menu
-          </button>
+          <p className="font-display text-2xl text-foreground tracking-tight">
+            {winner ? `${winner.name} venceu!` : "Resolvido!"}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2 w-full">
+            <button
+              onClick={resetGame}
+              className="font-display text-base px-6 py-3 rounded-2xl bg-primary text-primary-foreground hover:brightness-110 transition-all shadow-soft hover:shadow-hover"
+            >
+              Novo jogo
+            </button>
+            <button
+              onClick={goBackToMenu}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors px-6 py-3 rounded-2xl bg-secondary"
+            >
+              Voltar ao menu
+            </button>
+          </div>
         </motion.div>
       ) : (
         <>
@@ -363,15 +388,19 @@ export default function Index() {
           {phase === "spin" && !spinning && (
             <button
               onClick={() => setPhase("solve")}
-              className="font-display text-sm px-6 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground transition-all"
+              className="font-medium text-sm px-5 py-3 rounded-2xl bg-accent/10 text-accent hover:bg-accent hover:text-accent-foreground transition-all flex items-center gap-2"
             >
-              RESOLVER PUZZLE
+              <Lightbulb size={16} /> Resolver puzzle
             </button>
           )}
 
           {phase === "guess" && !spinning && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <p className="text-center text-muted-foreground mb-2 font-body text-sm">Escolha uma letra:</p>
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-card border border-border rounded-2xl p-4 shadow-soft w-full max-w-xl"
+            >
+              <p className="text-center text-muted-foreground mb-3 text-sm">Escolha uma letra</p>
               <LetterPicker usedLetters={usedLetters} onPick={handleLetterPick} disabled={spinning} />
             </motion.div>
           )}

@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Settings, Upload } from "lucide-react";
+import { motion } from "framer-motion";
+import { X, Plus, Upload, BookOpen, Trash2 } from "lucide-react";
 
 interface PhraseManagerProps {
   phrases: string[];
@@ -28,7 +28,6 @@ export default function PhraseManager({ phrases, onUpdate, onClose }: PhraseMana
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
@@ -36,15 +35,12 @@ export default function PhraseManager({ phrases, onUpdate, onClose }: PhraseMana
         .split(/\r?\n/)
         .map((l) => l.trim().toUpperCase())
         .filter((l) => l.length > 0);
-
       if (lines.length > 0) {
         const unique = [...new Set([...phrases, ...lines])];
         onUpdate(unique);
       }
     };
     reader.readAsText(file);
-
-    // Reset input so same file can be re-uploaded
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -53,20 +49,29 @@ export default function PhraseManager({ phrases, onUpdate, onClose }: PhraseMana
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-background/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-card border border-border rounded-xl p-6 w-full max-w-md max-h-[70vh] flex flex-col gap-4"
+        initial={{ scale: 0.95, opacity: 0, y: 10 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-card border border-border rounded-2xl p-6 w-full max-w-md max-h-[80vh] flex flex-col gap-4 shadow-hover"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl text-primary">Gerenciar Palavras</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
-            <X size={20} />
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <BookOpen className="text-primary" size={18} />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-display text-lg text-foreground tracking-tight">Gerenciar palavras</h2>
+            <p className="text-muted-foreground text-xs">{phrases.length} palavra(s) na lista</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center"
+          >
+            <X size={16} />
           </button>
         </div>
 
@@ -77,17 +82,16 @@ export default function PhraseManager({ phrases, onUpdate, onClose }: PhraseMana
             onChange={(e) => setNewPhrase(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addPhrase()}
             placeholder="Nova palavra ou frase..."
-            className="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex-1 bg-secondary border border-transparent rounded-2xl px-4 py-3 text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-ring focus:bg-card transition-colors"
           />
           <button
             onClick={addPhrase}
-            className="bg-accent text-accent-foreground rounded-lg px-3 py-2 hover:brightness-110 transition-all"
+            className="bg-primary text-primary-foreground rounded-2xl px-4 hover:brightness-110 transition-all shadow-soft flex items-center justify-center"
           >
             <Plus size={18} />
           </button>
         </div>
 
-        {/* File upload */}
         <input
           ref={fileInputRef}
           type="file"
@@ -97,32 +101,32 @@ export default function PhraseManager({ phrases, onUpdate, onClose }: PhraseMana
         />
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="w-full flex items-center justify-center gap-2 bg-muted text-muted-foreground rounded-lg px-4 py-2 font-body text-sm hover:text-foreground transition-all border border-dashed border-border"
+          className="w-full flex items-center gap-3 bg-secondary text-foreground rounded-2xl px-4 py-3 text-sm hover:bg-muted transition-all border border-dashed border-border"
         >
-          <Upload size={16} /> Importar lista de palavras (.txt)
+          <div className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center">
+            <Upload className="text-accent" size={16} />
+          </div>
+          <span>Importar lista de palavras (.txt)</span>
         </button>
 
-        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+        <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 -mr-1">
           {phrases.map((phrase, i) => (
             <div
               key={i}
-              className="flex items-center justify-between bg-muted rounded-lg px-3 py-2 group"
+              className="flex items-center justify-between bg-secondary rounded-2xl px-4 py-2.5 group"
             >
-              <span className="font-body text-sm text-foreground">{phrase}</span>
+              <span className="text-sm text-foreground truncate">{phrase}</span>
               <button
                 onClick={() => removePhrase(i)}
-                className="text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                className="text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100 shrink-0 ml-2"
                 disabled={phrases.length <= 1}
+                aria-label="Remover"
               >
-                <X size={16} />
+                <Trash2 size={15} />
               </button>
             </div>
           ))}
         </div>
-
-        <p className="text-muted-foreground text-xs font-body text-center">
-          {phrases.length} palavra(s) na lista
-        </p>
       </motion.div>
     </motion.div>
   );
