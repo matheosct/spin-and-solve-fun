@@ -12,8 +12,13 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Bungee", "cursive"],
-        body: ["Outfit", "sans-serif"],
+        display: ["Geist", "system-ui", "sans-serif"],
+        body: ["Geist", "system-ui", "sans-serif"],
+        sans: ["Geist", "system-ui", "sans-serif"],
+      },
+      boxShadow: {
+        soft: "var(--shadow-soft)",
+        hover: "var(--shadow-hover)",
       },
       colors: {
         border: "hsl(var(--border))",
