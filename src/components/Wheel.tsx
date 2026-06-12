@@ -128,7 +128,7 @@ export default function Wheel({ onResult, spinning, setSpinning }: WheelProps) {
                         fill="white"
                         fontSize="12"
                         fontWeight="bold"
-                        fontFamily="Bungee, cursive"
+                        fontFamily="Geist, system-ui, sans-serif"
                         style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}
                       >
                         {ch}
@@ -148,7 +148,7 @@ export default function Wheel({ onResult, spinning, setSpinning }: WheelProps) {
       <button
         onClick={spin}
         disabled={spinning}
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 font-display text-sm px-5 py-2.5 rounded-2xl bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-60 transition-all shadow-soft hover:shadow-hover active:scale-95 whitespace-nowrap"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 font-display text-sm px-5 py-2.5 rounded-2xl text-primary-foreground hover:brightness-110 disabled:opacity-60 transition-all shadow-soft hover:shadow-hover active:scale-95 whitespace-nowrap mt-20"
       >
         {spinning ? "..." : "GIRAR"}
       </button>

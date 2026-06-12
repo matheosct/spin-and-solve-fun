@@ -5,8 +5,7 @@ interface LetterPickerProps {
 }
 
 const ROWS = [
-  "ABCDEFGHIJKLM".split(""),
-  "NOPQRSTUVWXYZ".split(""),
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
 ];
 
 export default function LetterPicker({ usedLetters, onPick, disabled }: LetterPickerProps) {
